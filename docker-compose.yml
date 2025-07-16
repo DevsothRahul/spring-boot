@@ -1,0 +1,67 @@
+#version: '3.8'
+#services:
+#  mysql:
+#    image: mysql:8
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+#      MYSQL_DATABASE: employee_management_system
+#    ports:
+#      - "3306:3306"
+#
+#  springboot-app:
+#    build: .
+#    environment:
+#      DB_URL: jdbc:mysql://mysql:3306/employee_management_system
+#      DB_USERNAME: root
+#      DB_PASSWORD: ${DB_PASSWORD}
+#      DB_DIALECT: org.hibernate.dialect.MySQL8Dialect
+#      DB_HIBERNATE_DDL_AUTO: update
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - mysql
+
+version: "3.7"
+
+services:
+  api_service:
+    build: .
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - springapimysql-net
+    environment:
+      - spring.datasource.url=${SPRING_DATASOURCE_URL}
+      - spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
+      - spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+
+  mysqldb:
+    image: "mysql:8.0"
+    restart: always
+    ports:
+      - 3306:3306
+    networks:
+      - springapimysql-net
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  springapimysql-net:
+
+volumes:
+  mysql-data:
+
